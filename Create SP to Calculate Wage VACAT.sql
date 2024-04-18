@@ -1,4 +1,4 @@
-USE [ULTIPRO_BGF]
+USE [ULTIPRO_SAMPLE]
 GO
 /****** Object:  StoredProcedure [dbo].[sp_PN_vacat_wage]    Script Date: 01/13/2010 09:05:22 ******/
 SET ANSI_NULLS ON
@@ -6,7 +6,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 -- =============================================
---Client: BGF Industries
+--Client: SAMPLE
 --ProNet Information Systems/Jordan Cox
 --Calculates Wage Vacation Accruals
 --11/12/2009
