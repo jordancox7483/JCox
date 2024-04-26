@@ -1,0 +1,1643 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <!--*************************************************-->
+  <!-- Custom JC integration for jobs v23              -->
+  <!--                                                 -->
+  <!--                                                 -->
+  <!--                                                 -->
+  <!--                                                 -->
+  <!--  v24:  fix for full sync  	                   -->
+  <!--*************************************************-->
+<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/2009/01" projectedClass="Requisition" locale="en" alias="ReqMain" mode="XML" largegraph="true" preventDuplicates="false" xmlns:quer="http://www.taleo.com/ws/integration/query">
+	<quer:subQueries/>
+	<quer:projections>
+		<quer:projection alias="INTEGRATION_ID">
+			<quer:field path="ContestNumber"/>
+		</quer:projection>
+		<quer:projection alias="LastModifiedDateInfo">
+			<quer:field path="JobInformation,LastModifiedDate"/>
+		</quer:projection>
+		<quer:projection alias="YearLastModified">
+			<quer:customFunction name="TO_CHAR">
+				<quer:field path="JobInformation,LastModifiedDate"/>
+				<quer:string>YY</quer:string>
+			</quer:customFunction>
+		</quer:projection>
+		<quer:projection alias="LastModifiedYeartoNowCompare">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="LMDYeartoNowCompare" mode="XML" largegraph="true" preventDuplicates="true">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection>
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="JobInformation,LastModifiedDate"/>
+							<quer:string>YY</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:customFunction name="TO_CHAR">
+								<quer:field path="JobInformation,LastModifiedDate"/>
+								<quer:string>YY</quer:string>
+							</quer:customFunction>
+							<quer:customFunction name="TO_CHAR">
+								<quer:date type="now"/>
+								<quer:string>YY</quer:string>
+							</quer:customFunction>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="Today">
+			<quer:customFunction name="TO_CHAR">
+				<quer:date type="now"/>
+				<quer:string>yyyyMMdd</quer:string>
+			</quer:customFunction>
+		</quer:projection>
+		<quer:projection alias="Hours">
+			<quer:customFunction name="TO_CHAR">
+				<quer:date type="now"/>
+				<quer:string>HH</quer:string>
+			</quer:customFunction>
+		</quer:projection>
+		<quer:projection alias="Year">
+			<quer:customFunction name="TO_CHAR">
+				<quer:date type="now"/>
+				<quer:string>YY</quer:string>
+			</quer:customFunction>
+		</quer:projection>
+		<quer:projection alias="MinutesTest2">
+			<quer:customFunction name="TO_CHAR">
+				<quer:date type="now"/>
+				<quer:string>mi</quer:string>
+			</quer:customFunction>
+		</quer:projection>
+		<quer:projection alias="TodayUnformatted">
+			<quer:date type="now"/>
+		</quer:projection>
+		<quer:projection alias="DecodeOrgSample">
+			<!-- Decode (find/replace) using a substring search  -->
+			<quer:decode>
+				<quer:substring>
+					<quer:field path="JobInformation,Organization,Code"/>
+					<!-- substring source field  -->
+					<quer:string>0</quer:string>
+					<!-- substring start  -->
+					<quer:string>3</quer:string>
+					<!-- substring end  -->
+				</quer:substring>
+				<quer:string>130</quer:string>
+				<!-- "find" from substring above (I.E. 123 or xxx)  -->
+				<quer:string>output</quer:string>
+				<!-- If "Find" is found, ouput this string  -->
+				<quer:field path="JobInformation,Organization,Code"/>
+				<!-- If "Find" is  NOT found, ouput this string, field, or futher code  -->
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="SubstringTest">
+			<quer:substring>
+				<quer:field path="JobInformation,Organization,Code"/>
+				<quer:string>0</quer:string>
+				<quer:string>3</quer:string>
+			</quer:substring>
+		</quer:projection>
+		<!-- Start Fixed Org setup -->
+		<quer:projection alias="JobField1">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,JobField,Parent,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,JobField,Name"/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,JobField,Parent,Parent,Parent,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="JobField2">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,JobField,Parent,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,JobField,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="JobField3">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,JobField,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,JobField,Parent,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="JobField4">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,JobField,Parent,Name"/>
+							<quer:string>Job Field</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,JobField,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="OrgLevel1">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,Organization,Parent,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,Organization,Name"/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="OrgLevel2">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,Organization,Parent,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,Organization,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="OrgLevel3">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:field path="JobInformation,Organization,Name"/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,Organization,Parent,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<quer:projection alias="OrgLevel4">
+			<!-- Goes to 4 levels, "SAMPLECompany" is the "Blank" code, change per client -->
+			<quer:switchByCriterion>
+				<quer:cases>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+					<quer:case>
+						<quer:equal>
+							<quer:field path="JobInformation,Organization,Parent,Name"/>
+							<quer:string>SAMPLECompany</quer:string>
+						</quer:equal>
+						<quer:string/>
+					</quer:case>
+				</quer:cases>
+				<quer:defaultValue>
+					<quer:field path="JobInformation,Organization,Name"/>
+				</quer:defaultValue>
+			</quer:switchByCriterion>
+		</quer:projection>
+		<!-- End Fixed Org setup -->
+		
+<!-- Start Prescreening setup to match MukMuk -->	
+<quer:projection alias="QuestionSEQ_One"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>1</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_One"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_One"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>1</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Two"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>2</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Two"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Two"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>2</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Three"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>3</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Three"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Three"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>3</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Four"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>4</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Four"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Four"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>4</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Five"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>5</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Five"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Five"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>5</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Six"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>6</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Six"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Six"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>6</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Seven"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>7</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Seven"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Seven"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>7</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Eight"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>8</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Eight"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Eight"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>8</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Nine"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>9</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Nine"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Nine"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>9</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Ten"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>10</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Ten"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Ten"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>10</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Eleven"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>11</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Eleven"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Eleven"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>11</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twelve"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>12</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twelve"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twelve"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>12</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Thirteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>13</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Thirteen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Thirteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>13</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Fourteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>14</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Fourteen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Fourteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>14</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Fifteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>15</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Fifteen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Fifteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>15</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Sixteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>16</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Sixteen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Sixteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>16</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Seventeen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>17</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Seventeen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Seventeen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>17</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Eighteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>18</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Eighteen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Eighteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>18</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Nineteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>19</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Nineteen"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Nineteen"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>19</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twenty"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>20</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twenty"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twenty"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>20</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twentyone"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>21</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twentyone"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twentyone"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>21</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twentytwo"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>22</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twentytwo"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twentytwo"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>22</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twentythree"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>23</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twentythree"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twentythree"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>23</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twentyfour"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>24</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twentyfour"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twentyfour"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>24</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+<quer:projection alias="QuestionSEQ_Twentyfive"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>25</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection><quer:projection alias="QuestionCAT_Twentyfive"> <!-- JC CUSTOM --><quer:string>ALL</quer:string></quer:projection><quer:projection alias="QuestionID_Twentyfive"> <!-- JC CUSTOM --><quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="Requisition" locale="en" alias="QuestionEmbedded" mode="XML" largegraph="true" preventDuplicates="false"><quer:subQueries/><quer:projections><quer:projection><quer:concatenate><quer:string>REG-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Number"/><quer:string>-</quer:string><quer:field path="JobInformation,PrescreeningForm,Questions,Question,Code" /></quer:concatenate></quer:projection></quer:projections><quer:projectionFilterings/><quer:filterings><quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:field ownerQuery="ReqMain" path="ContestNumber"/></quer:equal></quer:filtering><quer:filtering><quer:equal><quer:field path="JobInformation,PrescreeningForm,Questions,DisplaySequence"/><quer:string>25</quer:string></quer:equal></quer:filtering></quer:filterings><quer:sortings/><quer:sortingFilterings/><quer:groupings/><quer:joinings/></quer:query></quer:projection>
+
+<!-- End Prescreening setup to match MukMuk -->		
+		
+
+		<!-- Start UDF setup -->
+		<quer:projection alias="WillingnessToTravel">
+			<quer:field path="JobInformation,WillingnessToTravel,Description"/>
+		</quer:projection>
+		<quer:projection alias="OvertimeStatus">
+			<quer:field path="JobInformation,ENG_5fOvertimeStatus,Description"/>
+		</quer:projection>
+		<quer:projection alias="PositionType">
+			<quer:field path="JobInformation,ENG_5fPositionType,Description"/>
+		</quer:projection>
+		<quer:projection alias="JobShift">
+			<quer:field path="JobInformation,SAMPLECompany_5fShift,Description"/>
+		</quer:projection>
+<!-- 		<quer:projection alias="WillingnessToTravel">
+			<quer:field path="JobInformation,ENG_5fTravel,Description"/>
+		</quer:projection> -->
+		<quer:projection alias="ObtainClearance">
+			<quer:field path="JobInformation,SAMPLECompany_5fObtainClearance,Description"/>
+		</quer:projection>
+		<quer:projection alias="PossessClearance">
+			<quer:field path="JobInformation,ENG_5fMinimumClearance,Description"/>
+		</quer:projection>
+		<quer:projection alias="Telecommuting">
+			<quer:field path="JobInformation,SAMPLECompany_5fTelecommuting,Description"/>
+		</quer:projection>
+		<quer:projection alias="FundingType">
+			<quer:field path="JobInformation,ENG_5fFundingType,Description"/>
+		</quer:projection>
+		<quer:projection alias="jobcode2">
+			<quer:field path="JobInformation,SAMPLECompany_5fjobcode2"/>
+		</quer:projection>
+		<quer:projection alias="joblevel2">
+			<quer:field path="JobInformation,SAMPLECompany_5fjoblevel2,Description"/>
+		</quer:projection>
+		<quer:projection alias="SAMPLECompanyOverview">
+			<quer:field path="JobInformation,ENG_5fAboutEngility"/>
+		</quer:projection>
+		<quer:projection alias="DesiredQualExt">
+			<quer:field path="JobInformation,ENG_5fDesiredQualsExt"/>
+		</quer:projection>
+		<quer:projection alias="PolygraphType">
+			<quer:field path="JobInformation,ENG_5fPolygraphType,Description"/>
+		</quer:projection>
+		<quer:projection alias="KeyPerson">
+			<quer:field path="JobInformation,SAMPLECompany_5fKeyPerson"/>
+		</quer:projection>
+		<quer:projection alias="Sourcer">
+			<quer:field path="JobInformation,SAMPLECompany_5fSourcer"/>
+		</quer:projection>
+		<quer:projection alias="PracticeAreaReq">
+			<quer:field path="JobInformation,ENG_5fPracticeAreaReq,Description"/>
+		</quer:projection>
+		<quer:projection alias="ProgramName">
+			<quer:field path="JobInformation,Project_20or_20Contract_20Name,Description"/>
+		</quer:projection>
+		<quer:projection alias="CustomerClient">
+			<quer:field path="JobInformation,SAMPLECompany_5fCustomerClient"/>
+		</quer:projection>
+		<quer:projection alias="ProgramStatus">
+			<quer:field path="JobInformation,SAMPLECompany_5fProgramStatus"/>
+		</quer:projection>
+		<quer:projection alias="RecFirstName">
+			<quer:field path="JobInformation,RecruiterOwner,FirstName"/>
+		</quer:projection>
+		<quer:projection alias="RecLastName">
+			<quer:field path="JobInformation,RecruiterOwner,LastName"/>
+		</quer:projection>
+		<quer:projection alias="HMFirstName">
+			<quer:field path="HiringManager,FirstName"/>
+		</quer:projection>
+		<quer:projection alias="HMLastName">
+			<quer:field path="HiringManager,LastName"/>
+		</quer:projection>
+ 		<quer:projection alias="MaximumSalary">
+			<quer:field path="JobInformation,OfferParameter,MaximumSalary"/>
+		</quer:projection>
+		<quer:projection alias="MinimumSalary">
+			<quer:field path="JobInformation,OfferParameter,PayValue"/>
+		</quer:projection>
+		
+		<!-- End UDF setup -->
+		<quer:projection>
+			<quer:field path="JobInformation,JobField,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobField,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobField,Parent,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobField,Parent,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobField,Parent,Parent,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobField,Parent,Parent,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Parent,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Parent,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Parent,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,Organization,Parent,Parent,Parent,Parent,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="Position,JobTemplate,JobCode"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="BaseJobTemplate,JobCode"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="BaseJobTemplate,BaseJobTemplate,JobCode"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="HiringManagerAssistant,EmployeeID"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="HiringManagerAssistant,FirstName"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="HiringManagerAssistant,LastName"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobShift,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobShift,Description"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,WillingnessToTravel,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,WillingnessToTravel,Description"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="Justification,Number"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="Position,JobPosition,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,RecruiterOwner,EmployeeID"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,RecruiterOwner,FirstName"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,RecruiterOwner,LastName"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="HiringManager,EmployeeID"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="HiringManager,FirstName"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="HiringManager,LastName"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="Department,Code"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="Department,Number"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="Department,Name"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,EmploymentEquityJobCategory"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,EmploymentEquityJobGroup"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,EmploymentEquityEstablishment,Description"/>
+		</quer:projection>
+<!-- 		<quer:projection>
+			<quer:field path="JobInformation,MidPointSalary"/>
+		</quer:projection> -->
+		<quer:projection>
+			<quer:field path="JobInformation,OvertimeStatus,Number"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,OfferParameter,RelocationAmount"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,AdditionalInformation"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="AbstractInfo"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,CSWWorkflow,Mnemonic"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,CSWWorkflow,Description"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,JobGrade"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,ExternalBonusAmount"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,InternalBonusAmount"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,InternalBonusTracking"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,ExternalBonusTracking"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="ContactEmailInternal,CorrespondenceEmail"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="ContactEmailInternal,UserAccount,Loginname"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="ContactEmailExternal,CorrespondenceEmail"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="ContactEmailExternal,UserAccount,Loginname"/>
+		</quer:projection>
+		<quer:projection alias="GROUP_BEGIN_SRC1">
+			<quer:string/>
+		</quer:projection>
+		<quer:projection alias="SourceOpenDate">
+			<!-- changed to SourceJobBoardDesc to match mukmuk -->
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcingOpenDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection alias="OpenDateFixed" projectedValueType="string" projectedField="RuntimeString:OpenDateFormatted">
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="OpenDate"/>
+							<quer:string>yyyy-MM-dd</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>External (To Apply to Job)</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="SourceCloseDate">
+			<!-- changed to SourceJobBoardDesc to match mukmuk -->
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcingCloseDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection alias="CloseDateFixed" projectedValueType="string" projectedField="RuntimeString:CloseDateFormatted">
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="CloseDate"/>
+							<quer:string>yyyy-MM-dd</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>External (To Apply to Job)</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="SourceJobBoardDesc">
+			<!-- changed to SourceJobBoardDesc to match mukmuk -->
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcingRecSourceEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection>
+						<quer:field path="JobBoard,RecruitmentSource,Description"/>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>External (To Apply to Job)</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="SourceStatusDesc">
+			<!-- Changed to match MukMuk -->
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SrcStatEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection>
+						<quer:field path="SourcingRequestStatus,Description"/>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>External (To Apply to Job)</quer:string>
+						</quer:equal>
+					</quer:filtering>
+					<!-- 					  <quer:filtering><quer:lessThanOrEqual><quer:field path="CloseDate"/><quer:date type="now"/></quer:lessThanOrEqual></quer:filtering> -->
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="LastModifiedDate1">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="LMDEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection alias="CloseDateFixed" projectedValueType="string" projectedField="RuntimeString:CloseDateFormatted">
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="Requisition,JobInformation,LastModifiedDate"/>
+							<quer:string>yyyy-MM-dd</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>External (To Apply to Job)</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="GROUP_END_SRC1">
+			<quer:string/>
+		</quer:projection>
+		<quer:projection alias="GROUP_BEGIN_SRC2">
+			<quer:string/>
+		</quer:projection>
+		<quer:projection alias="SourcingOpenDate2">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/2009/02" projectedClass="SourcingRequest" locale="en" alias="SourcingOpenDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection alias="OpenDateFixed" projectedValueType="string" projectedField="RuntimeString:OpenDateFormatted">
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="OpenDate"/>
+							<quer:string>yyyy-MM-dd</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="SourcingCloseDate2">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/2009/02" projectedClass="SourcingRequest" locale="en" alias="SourcingCloseDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection alias="CloseDateFixed" projectedValueType="string" projectedField="RuntimeString:CloseDateFormatted">
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="CloseDate"/>
+							<quer:string>yyyy-MM-dd</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="SourcingRecruitmentSource2">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/2009/02" projectedClass="SourcingRequest" locale="en" alias="SourcingRecSourceEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection>
+						<quer:field path="JobBoard,RecruitmentSource,Description"/>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+						</quer:equal>
+					</quer:filtering>
+					<!-- 					  <quer:filtering><quer:lessThanOrEqual><quer:field path="CloseDate"/><quer:date type="now"/></quer:lessThanOrEqual></quer:filtering> -->
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="SourcingStatus2">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/2009/02" projectedClass="SourcingRequest" locale="en" alias="SrcStatEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection>
+						<quer:field path="SourcingRequestStatus,Description"/>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="LastModifiedDate2">
+			<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/2009/02" projectedClass="SourcingRequest" locale="en" alias="LMDEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+				<quer:subQueries/>
+				<quer:projections>
+					<quer:projection alias="CloseDateFixed" projectedValueType="string" projectedField="RuntimeString:CloseDateFormatted">
+						<quer:customFunction name="TO_CHAR">
+							<quer:field path="Requisition,JobInformation,LastModifiedDate"/>
+							<quer:string>yyyy-MM-dd</quer:string>
+						</quer:customFunction>
+					</quer:projection>
+				</quer:projections>
+				<quer:projectionFilterings/>
+				<quer:filterings>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="Requisition,ContestNumber"/>
+							<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+						</quer:equal>
+					</quer:filtering>
+					<quer:filtering>
+						<quer:equal>
+							<quer:field path="JobBoard,RecruitmentSource,Description"/>
+							<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+						</quer:equal>
+					</quer:filtering>
+				</quer:filterings>
+				<quer:sortings/>
+				<quer:sortingFilterings/>
+				<quer:groupings/>
+				<quer:joinings/>
+			</quer:query>
+		</quer:projection>
+		<quer:projection alias="GROUP_END_SRC2">
+			<quer:string/>
+		</quer:projection>
+		<quer:projection alias="Requisition_Title">
+			<quer:field path="JobInformation,Title"/>
+		</quer:projection>
+		<quer:projection alias="TitleByManager">
+			<quer:field path="ManagerRequisitionTitle"/>
+		</quer:projection>
+		<quer:projection alias="LastModifiedDate">
+			<quer:field path="JobInformation,LastModifiedDate"/>
+		</quer:projection>
+		<quer:projection alias="Organization">
+			<quer:field path="JobInformation,Organization,Code"/>
+		</quer:projection>
+		<quer:projection alias="OrganizationName">
+			<quer:field path="JobInformation,Organization,Name"/>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocation">
+			<quer:field path="JobInformation,PrimaryLocation,Code"/>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationName">
+			<!-- JC Fix to address issue with names being overwritten in Talemetry even with unique codes -->			<quer:concatenate>
+				<quer:decode>
+					<quer:field path="JobInformation,PrimaryLocation,Level"/>
+					<quer:integer>1</quer:integer>
+					<quer:string/>
+					<quer:integer>2</quer:integer>
+					<quer:string/>
+					<quer:integer>3</quer:integer>
+					<quer:string/>
+					<quer:integer>4</quer:integer>
+					<quer:field path="JobInformation,PrimaryLocation,Name"/>
+					<quer:integer>5</quer:integer>
+					<quer:field path="JobInformation,PrimaryLocation,Parent,Name"/>
+					<quer:field path="JobInformation,PrimaryLocation,WorkLocation,City"/>
+				</quer:decode>
+				<quer:string> </quer:string>
+				<quer:field path="JobInformation,PrimaryLocation,Code"/>
+			</quer:concatenate>
+
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationStreet">
+			<quer:decode>
+				<quer:field path="JobInformation,PrimaryLocation,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:string/>
+				<quer:integer>2</quer:integer>
+				<quer:string/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationCity">
+			<quer:decode>
+				<quer:field path="JobInformation,PrimaryLocation,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:string/>
+				<quer:integer>2</quer:integer>
+				<quer:string/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationStateRegion">
+			<quer:decode>
+				<quer:field path="JobInformation,PrimaryLocation,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:string/>
+				<quer:integer>2</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Name"/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationCountry">
+			<quer:decode>
+				<quer:field path="JobInformation,PrimaryLocation,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Name"/>
+				<quer:integer>2</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Name"/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationWorldRegion">
+			<quer:decode>
+				<quer:field path="JobInformation,PrimaryLocation,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Name"/>
+				<quer:integer>2</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Name"/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,PrimaryLocation,Parent,Parent,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="PrimaryLocationPostal">
+			<quer:field path="JobInformation,PrimaryLocation,ZipCode"/>
+		</quer:projection>
+		<quer:projection alias="GROUP_BEGIN_sublocations">
+			<quer:string/>
+		</quer:projection>
+		<quer:projection alias="OtherLocations">
+			<quer:field path="JobInformation,OtherLocations,Code"/>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsName">
+			<!-- JC Fix to address issue with names being overwritten in Talemetry even with unique codes -->
+			<quer:concatenate>
+				<quer:field path="JobInformation,OtherLocations,Name"/>
+				<quer:string> </quer:string>
+				<quer:field path="JobInformation,OtherLocations,Code"/>
+			</quer:concatenate>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsStreet">
+			<quer:field path="JobInformation,OtherLocations,WorkLocation,Address1"/>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsCity">
+			<quer:decode>
+				<quer:field path="JobInformation,OtherLocations,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:string/>
+				<quer:integer>2</quer:integer>
+				<quer:string/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsStateRegion">
+			<quer:decode>
+				<quer:field path="JobInformation,OtherLocations,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:string/>
+				<quer:integer>2</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Name"/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsCountry">
+			<quer:decode>
+				<quer:field path="JobInformation,OtherLocations,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Name"/>
+				<quer:integer>2</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Name"/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsWorldRegion">
+			<quer:decode>
+				<quer:field path="JobInformation,OtherLocations,Level"/>
+				<quer:integer>1</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Name"/>
+				<quer:integer>2</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Name"/>
+				<quer:integer>3</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Name"/>
+				<quer:integer>4</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Parent,Name"/>
+				<quer:integer>5</quer:integer>
+				<quer:field path="JobInformation,OtherLocations,Parent,Parent,Parent,Parent,Name"/>
+			</quer:decode>
+		</quer:projection>
+		<quer:projection alias="OtherLocationsPostal">
+			<quer:field path="JobInformation,OtherLocations,ZipCode"/>
+		</quer:projection>
+		<quer:projection alias="GROUP_END_sublocations">
+			<quer:string/>
+		</quer:projection>
+		<quer:projection alias="JobField">
+			<quer:field path="JobInformation,JobField,Code"/>
+		</quer:projection>
+		<quer:projection alias="JobFieldName">
+			<quer:field path="JobInformation,JobField,Name"/>
+		</quer:projection>
+		<quer:projection alias="JobFieldParentName">
+			<!-- JC Fixed so this shows up in the stock field (classification) - Recheck that all clients use the same field, this works for Leidos -->
+			<quer:field path="JobInformation,JobField,Parent,Name"/>
+		</quer:projection>
+		<quer:projection alias="JobFieldParentCode">
+			<quer:field path="JobInformation,JobField,Parent,Code"/>
+		</quer:projection>
+		<quer:projection alias="Category">
+			<!-- v6 Change -->
+			<quer:field path="JobInformation,JobField,Name"/>
+		</quer:projection>
+		<quer:projection alias="EducationLevel">
+			<quer:field path="JobInformation,StudyLevel,Number"/>
+		</quer:projection>
+		<quer:projection alias="EducationLevelDesc">
+			<quer:field path="JobInformation,StudyLevel,Description"/>
+		</quer:projection>
+		<quer:projection alias="EmployeeStatus">
+			<quer:field path="JobInformation,EmployeeStatus,Number"/>
+		</quer:projection>
+		<quer:projection alias="EmployeeStatusDesc">
+			<quer:field path="JobInformation,EmployeeStatus,Description"/>
+		</quer:projection>
+		<quer:projection alias="JobLevel">
+			<quer:field path="JobInformation,JobLevel,Number"/>
+		</quer:projection>
+		<quer:projection alias="JobLevelDesc">
+			<quer:field path="JobInformation,JobLevel,Description"/>
+		</quer:projection>
+		<quer:projection alias="JobType">
+			<quer:field path="JobInformation,JobType,Number"/>
+		</quer:projection>
+		<quer:projection alias="JobTypeDesc">
+			<quer:field path="JobInformation,JobType,Description"/>
+		</quer:projection>
+		<quer:projection alias="JobReqNum">
+			<quer:field path="ContestNumber"/>
+		</quer:projection>
+		<quer:projection alias="Schedule">
+			<quer:field path="JobInformation,JobSchedule,Code"/>
+		</quer:projection>
+		<quer:projection alias="ScheduleDesc">
+			<!-- JC Fixed so this shows up in the stock field - Recheck that all clients use the same field, this works for Leidos (it's a UDF) -->
+			<quer:field path="JobInformation,JobSchedule,Description"/>
+		</quer:projection>
+		<quer:projection alias="JobScheduleDesc">
+			<!-- JC Fixed so this shows up in the stock field - Recheck that all clients use the same field, this works for Leidos (it's a UDF) -->
+			<quer:field path="JobInformation,JobSchedule,Description"/>
+		</quer:projection>
+		<quer:projection alias="Shift">
+			<quer:field path="JobInformation,JobShift,Number"/>
+		</quer:projection>
+		<quer:projection alias="ShiftDesc">
+			<quer:field path="JobInformation,JobShift,Description"/>
+		</quer:projection>
+		<quer:projection alias="JobShiftDesc">
+			<quer:field path="JobInformation,JobShift,Description"/>
+		</quer:projection>
+		<quer:projection alias="Travel">
+			<quer:field path="JobInformation,WillingnessToTravel,Number"/>
+		</quer:projection>
+		<quer:projection alias="TravelDesc">
+			<quer:field path="JobInformation,WillingnessToTravel,Description"/>
+		</quer:projection>
+		<quer:projection alias="TravelValue">
+			<!-- JC Fixed so this shows up in the stock field - Recheck that all clients use the same field, this works for Leidos (it's a UDF) -->
+			<quer:field path="JobInformation,WillingnessToTravel,Code"/>
+		</quer:projection>
+<!-- 		<quer:projection alias="SalaryMaximum">
+			<quer:field path="JobInformation,OfferParameter,MaximumSalary"/>
+		</quer:projection>
+		<quer:projection alias="SalaryMinimum">
+			<quer:field path="JobInformation,OfferParameter,PayValue"/>
+		</quer:projection> -->
+		<quer:projection alias="SalaryCurrency">
+			<quer:field path="JobInformation,OfferParameter,Currency,ISO4217Abbreviation"/>
+		</quer:projection>
+		<quer:projection alias="SalaryPayBasis">
+			<quer:field path="JobInformation,OfferParameter,PayFrequencyBasis,Description"/>
+		</quer:projection>
+		<quer:projection alias="CitizenshipStatus">
+			<quer:field path="JobInformation,CitizenshipStatus,Number"/>
+		</quer:projection>
+		<quer:projection alias="CitizenshipStatusDesc">
+			<quer:field path="JobInformation,CitizenshipStatus,Description"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="JobInformation,NumberToHire"/>
+		</quer:projection>
+		<quer:projection alias="DescriptionInternalHTML">
+			<quer:field path="JobInformation,DescriptionInternalHTML"/>
+		</quer:projection>
+		<quer:projection alias="InternalQualificationHTML">
+			<quer:field path="JobInformation,InternalQualificationHTML"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="OpeningDateExternal"/>
+		</quer:projection>
+		<quer:projection>
+			<quer:field path="ClosingDateExternal"/>
+		</quer:projection>
+		<quer:projection alias="DescriptionTitle1">
+			<quer:string>Description</quer:string>
+		</quer:projection>
+		<quer:projection alias="DescriptionBody1">
+			<quer:field path="JobInformation,DescriptionExternalHTML"/>
+		</quer:projection>
+		<quer:projection alias="DescriptionTitle2">
+			<quer:string>Qualifications</quer:string>
+		</quer:projection>
+<!-- 		<quer:projection alias="DescriptionBody2">
+			<quer:field path="JobInformation,ExternalQualificationHTML"/>
+		</quer:projection> -->
+
+<!-- Custom JC Qualifications --> 
+<quer:projection alias="DescriptionBody2">
+			<quer:concatenate>
+				<quer:field path="JobInformation,ExternalQualificationHTML"/>
+				<quer:string>&lt;p&gt;&lt;b&gt;Desired Qualifications&lt;/b&gt;&lt;/p&gt;&amp;nbsp;</quer:string>
+				<!-- <quer:string>&lt;p&gt;&lt;b&gt;Desired Qualifications&lt;/b&gt;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;</quer:string> --> <!-- original with more spaces -->
+				<quer:field path="JobInformation,ENG_5fDesiredQualsExt"/>
+			</quer:concatenate>
+		</quer:projection>
+
+		<quer:projection alias="TargetStartDate">
+			<quer:field path="JobInformation,OfferParameter,TargetStartDate"/>
+		</quer:projection>
+		<quer:projection alias="Status">
+			<quer:field path="State,ParentState,Description"/>
+		</quer:projection>
+		<quer:projection alias="StatusDetails">
+			<quer:field path="State,Description"/>
+		</quer:projection>
+		<quer:projection alias="PostedApplyURL">
+			<quer:concatenate>
+				<quer:string>https://SAMPLECompanyjobs.taleo.net/careersection/SAMPLECompany/jobapply.ftl?lang=en&amp;job=</quer:string>
+				<quer:field path="ContestNumber"/>
+			</quer:concatenate>
+		</quer:projection>
+		<quer:projection alias="Recruiter">
+			<quer:concatenate>
+				<quer:field path="JobInformation,RecruiterOwner,LastName"/>
+				<quer:string>, </quer:string>
+				<quer:field path="JobInformation,RecruiterOwner,FirstName"/>
+			</quer:concatenate>
+		</quer:projection>
+		<quer:projection alias="RecruiterUserNo">
+			<!-- Change NewEnvironment to use loginename -->
+			<!-- <quer:field path="JobInformation,RecruiterOwner,EmployeeID"/> -->
+			<quer:field path="JobInformation,RecruiterOwner,UserAccount,Loginname"/>
+			
+		</quer:projection>
+		<quer:projection alias="RecruiterAssign">
+			<quer:string>true</quer:string>
+		</quer:projection>
+		<quer:projection alias="HiringMgr">
+			<quer:concatenate>
+				<quer:field path="HiringManager,LastName"/>
+				<quer:string>, </quer:string>
+				<quer:field path="HiringManager,FirstName"/>
+			</quer:concatenate>
+		</quer:projection>
+		<quer:projection alias="HiringMgrUserNo">
+			<quer:field path="HiringManager,UserNo"/>
+		</quer:projection>
+		<quer:projection alias="HiringMgrAssign">
+			<quer:string>false</quer:string>
+		</quer:projection>
+		<quer:projection alias="ReqCreationDate">
+			<quer:field path="JobInformation,CreationDate"/>
+		</quer:projection>
+		<quer:projection alias="HasBeenApproved">
+			<quer:field path="HasBeenApproved"/>
+		</quer:projection>
+	</quer:projections>
+	<quer:projectionFilterings/>
+	<quer:filterings>
+		<!-- <quer:filtering> -->
+			<!-- <quer:between> -->
+				<!-- <quer:field path="JobInformation,LastModifiedDate"/> -->
+				<!-- <quer:date>{{last_run_time}}</quer:date> -->
+				<!-- <quer:date>{{this_run_time}}</quer:date> -->
+			<!-- </quer:between> -->
+		<!-- </quer:filtering> -->
+
+
+
+
+<quer:filtering>
+	<!-- JC 9/13/19 Improved filter to avoid full sync -->
+	<quer:includedIn>
+		<quer:switchByCriterion>
+			<quer:cases>
+				<quer:case>
+					<quer:between>
+						<quer:field path="JobInformation,LastModifiedDate" />
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+				<quer:case>
+					<quer:between>
+						<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcCreationDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+							<quer:subQueries/>
+							<quer:projections>
+								<quer:projection>
+									<!-- <quer:customFunction name="TO_CHAR"> -->
+									<quer:field path="CreationDate"/>
+									<!-- <quer:string>YYYY-MM-DDTHH24:MI:SS</quer:string> -->
+									<!-- </quer:customFunction> -->
+								</quer:projection>
+							</quer:projections>
+							<quer:projectionFilterings/>
+							<quer:filterings>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="Requisition,ContestNumber"/>
+										<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+									</quer:equal>
+								</quer:filtering>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="JobBoard,RecruitmentSource,Description"/>
+										<quer:string>External (To Apply to Job)</quer:string>
+									</quer:equal>
+								</quer:filtering>
+							</quer:filterings>
+							<quer:sortings/>
+							<quer:sortingFilterings/>
+							<quer:groupings/>
+							<quer:joinings/>
+						</quer:query>
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+				<quer:case>
+					<quer:between>
+						<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcOpenDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+							<quer:subQueries/>
+							<quer:projections>
+								<quer:projection>
+									<!-- <quer:customFunction name="TO_CHAR"> -->
+									<quer:field path="OpenDate"/>
+									<!-- <quer:string>YYYY-MM-DDTHH24:MI:SS</quer:string> -->
+									<!-- </quer:customFunction> -->
+								</quer:projection>
+							</quer:projections>
+							<quer:projectionFilterings/>
+							<quer:filterings>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="Requisition,ContestNumber"/>
+										<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+									</quer:equal>
+								</quer:filtering>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="JobBoard,RecruitmentSource,Description"/>
+										<quer:string>External (To Apply to Job)</quer:string>
+									</quer:equal>
+								</quer:filtering>
+							</quer:filterings>
+							<quer:sortings/>
+							<quer:sortingFilterings/>
+							<quer:groupings/>
+							<quer:joinings/>
+						</quer:query>
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+				<quer:case>
+					<quer:between>
+						<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcCloseDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+							<quer:subQueries/>
+							<quer:projections>
+								<quer:projection>
+									<!-- <quer:customFunction name="TO_CHAR"> -->
+									<quer:field path="CloseDate"/>
+									<!-- <quer:string>YYYY-MM-DDTHH24:MI:SS</quer:string> -->
+									<!-- </quer:customFunction> -->
+								</quer:projection>
+							</quer:projections>
+							<quer:projectionFilterings/>
+							<quer:filterings>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="Requisition,ContestNumber"/>
+										<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+									</quer:equal>
+								</quer:filtering>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="JobBoard,RecruitmentSource,Description"/>
+										<quer:string>External (To Apply to Job)</quer:string>
+									</quer:equal>
+								</quer:filtering>
+							</quer:filterings>
+							<quer:sortings/>
+							<quer:sortingFilterings/>
+							<quer:groupings/>
+							<quer:joinings/>
+						</quer:query>
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+				<quer:case>
+					<quer:between>
+						<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcCreationDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+							<quer:subQueries/>
+							<quer:projections>
+								<quer:projection>
+									<!-- <quer:customFunction name="TO_CHAR"> -->
+									<quer:field path="CreationDate"/>
+									<!-- <quer:string>YYYY-MM-DDTHH24:MI:SS</quer:string> -->
+									<!-- </quer:customFunction> -->
+								</quer:projection>
+							</quer:projections>
+							<quer:projectionFilterings/>
+							<quer:filterings>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="Requisition,ContestNumber"/>
+										<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+									</quer:equal>
+								</quer:filtering>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="JobBoard,RecruitmentSource,Description"/>
+										<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+									</quer:equal>
+								</quer:filtering>
+							</quer:filterings>
+							<quer:sortings/>
+							<quer:sortingFilterings/>
+							<quer:groupings/>
+							<quer:joinings/>
+						</quer:query>
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+				<quer:case>
+					<quer:between>
+						<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcOpenDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+							<quer:subQueries/>
+							<quer:projections>
+								<quer:projection>
+									<!-- <quer:customFunction name="TO_CHAR"> -->
+									<quer:field path="OpenDate"/>
+									<!-- <quer:string>YYYY-MM-DDTHH24:MI:SS</quer:string> -->
+									<!-- </quer:customFunction> -->
+								</quer:projection>
+							</quer:projections>
+							<quer:projectionFilterings/>
+							<quer:filterings>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="Requisition,ContestNumber"/>
+										<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+									</quer:equal>
+								</quer:filtering>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="JobBoard,RecruitmentSource,Description"/>
+										<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+									</quer:equal>
+								</quer:filtering>
+							</quer:filterings>
+							<quer:sortings/>
+							<quer:sortingFilterings/>
+							<quer:groupings/>
+							<quer:joinings/>
+						</quer:query>
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+				<quer:case>
+					<quer:between>
+						<quer:query productCode="RC1501" model="http://www.taleo.com/ws/tee800/1009/01" projectedClass="SourcingRequest" locale="en" alias="SourcCloseDateEmbedded" mode="XML" largegraph="true" preventDuplicates="false">
+							<quer:subQueries/>
+							<quer:projections>
+								<quer:projection>
+									<!-- <quer:customFunction name="TO_CHAR"> -->
+									<quer:field path="CloseDate"/>
+									<!-- <quer:string>YYYY-MM-DDTHH24:MI:SS</quer:string> -->
+									<!-- </quer:customFunction> -->
+								</quer:projection>
+							</quer:projections>
+							<quer:projectionFilterings/>
+							<quer:filterings>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="Requisition,ContestNumber"/>
+										<quer:field ownerQuery="ReqMain" path="ContestNumber"/>
+									</quer:equal>
+								</quer:filtering>
+								<quer:filtering>
+									<quer:equal>
+										<quer:field path="JobBoard,RecruitmentSource,Description"/>
+										<quer:string>SAMPLECompany - Enterprise Career Section - Internal</quer:string>
+									</quer:equal>
+								</quer:filtering>
+							</quer:filterings>
+							<quer:sortings/>
+							<quer:sortingFilterings/>
+							<quer:groupings/>
+							<quer:joinings/>
+						</quer:query>
+						<quer:date>{{last_run_time}}</quer:date>
+						<quer:date>{{this_run_time}}</quer:date>
+					</quer:between>
+					<quer:string>Yes</quer:string>
+				</quer:case>
+			</quer:cases>
+			<quer:defaultValue>
+				<quer:string>NO</quer:string>
+			</quer:defaultValue>
+		</quer:switchByCriterion>
+		<quer:list>
+			<quer:string>Yes</quer:string>
+		</quer:list>
+	</quer:includedIn>
+</quer:filtering>
+
+
+
+
+
+		<!-- Filter to exclude H1 jobs (which are being sent via webservices) -->
+		<!--             <quer:filtering> <quer:excludedFrom><quer:substring><quer:field path="ContestNumber"/><quer:string>0</quer:string><quer:string>5</quer:string></quer:substring><quer:list><quer:string>03174</quer:string><quer:string>27022</quer:string><quer:string>03192</quer:string><quer:string>26068</quer:string><quer:string>27212</quer:string><quer:string>03166</quer:string><quer:string>25100</quer:string><quer:string>25705</quer:string><quer:string>03216</quer:string><quer:string>08936</quer:string><quer:string>03170</quer:string><quer:string>03176</quer:string><quer:string>26119</quer:string><quer:string>27103</quer:string><quer:string>03167</quer:string><quer:string>03191</quer:string></quer:list></quer:excludedFrom></quer:filtering>	 -->
+		<quer:filtering>
+			<quer:includedIn>
+				<quer:field path="State,ParentState,Description"/>
+				<quer:list>
+					<quer:string>Open</quer:string>
+				</quer:list>
+			</quer:includedIn>
+		</quer:filtering>
+		<!-- 7/2 - Scope change to exclude Hourly HireType -->
+		<quer:filtering>
+			<quer:excludedFrom>
+				<quer:field path="JobInformation,HireType,Code"/>
+				<quer:list>
+					<quer:string>HOURLY</quer:string>
+				</quer:list>
+			</quer:excludedFrom>
+		</quer:filtering>
+
+		
+		
+		
+		
+		<!-- 		<quer:filtering><quer:equal><quer:field path="ContestNumber"/><quer:string>60479731</quer:string></quer:equal></quer:filtering> -->
+	</quer:filterings>
+	<quer:sortings>
+		<quer:sorting ascending="true">
+			<quer:field path="ContestNumber"/>
+		</quer:sorting>
+	</quer:sortings>
+	<quer:sortingFilterings/>
+	<quer:groupings/>
+	<quer:joinings/>
+</quer:query>
