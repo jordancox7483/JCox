@@ -1,3 +1,9 @@
+# This powershell script is specific to a Cannon g5000 series printer but can be adapted, just change manualSource to whatever your target printer tray is called.
+# The purpose of this is to regularly print a test page to keep the printer from drying up, especially the color inks.
+# It can be scheduled with a simple .bat file that calls this script in windows. (ie: powershell -ExecutionPolicy Bypass -File "C:\Users\Jordan\Documents\PrintImage.ps1")
+# Set imageFile to the file you want to print, my example uses a test file I found and downloaded.
+# Set printerName to the system name of your printer.
+
 # Load required .NET types for printing and image handling
 Add-Type -AssemblyName System.Drawing
 
