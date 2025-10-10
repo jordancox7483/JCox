@@ -1,6 +1,6 @@
 # Jordan C Cox
 
-I use this repo as a lightweight vault for scripts, small tools, and snippets I’ve built over the years. When I find a repeatable pattern or solve a niche problem, I park a cleaned‑up version here so I (and sometimes others) can reuse it later.
+I use this repo as storage for scripts, small tools, and snippets I’ve built over the years. When I find a repeatable pattern or solve a niche problem, I park a cleaned‑up version here so I (and sometimes others) can reuse it later.
 
 ## Languages Used
 - VBA
