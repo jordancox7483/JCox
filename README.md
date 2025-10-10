@@ -12,7 +12,7 @@ I use this repo as storage for scripts, small tools, and snippets I’ve built o
 
 ## Latest Projects
 - HRIS migration cleanup scripts for Eightfold.AI  
-  Notes: still stabilizing; will share more publicly once I’m comfortable they’re robust. I’m also using this work to learn more Python.
+  Notes: still stabilizing; will share more publicly once I’m comfortable they’re robust. I’m also using this work to learn more Python and GitHub. 
 
 - Printhead Maintainer – paper source/tray selection  
   Repo: https://github.com/jordancox7483/PrintheadMaintainer  
