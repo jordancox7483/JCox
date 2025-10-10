@@ -1,4 +1,4 @@
-# JCox
+# Jordan C Cox
 
 I use this repo as a lightweight vault for scripts, small tools, and snippets I’ve built over the years. When I find a repeatable pattern or solve a niche problem, I park a cleaned‑up version here so I (and sometimes others) can reuse it later.
 
@@ -20,4 +20,3 @@ I use this repo as a lightweight vault for scripts, small tools, and snippets I�
 
 ## Notes
 - Most items are self‑contained and meant to be read/used as examples. Environments differ, so treat them as starting points and adapt as needed.
-- Contributions, ideas, or “this saved me 10 minutes” stories are always welcome.
