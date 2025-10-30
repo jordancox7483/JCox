@@ -1,0 +1,20 @@
+<div id="trip-countdown" style="font:14px system-ui; padding:10px; border:1px solid #ddd; border-radius:8px; max-width:360px">
+  <div style="font-weight:600">Next Trip: Munich</div>
+  <div id="tc-when"></div>
+</div>
+<script>
+(function(){
+  const target = new Date('2026-03-15T08:00:00'); // your departure
+  const el = document.getElementById('trip-countdown');
+  const when = document.getElementById('tc-when');
+  function tick(){
+    const now = new Date();
+    let s = Math.max(0, Math.floor((target - now)/1000));
+    const d = Math.floor(s/86400); s%=86400;
+    const h = Math.floor(s/3600); s%=3600;
+    const m = Math.floor(s/60); const sec = s%60;
+    when.textContent = `${d} days, ${h} hours, ${m} minutes, ${sec} seconds`;
+  }
+  tick(); setInterval(tick, 1000);
+})();
+</script>

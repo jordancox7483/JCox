@@ -1,0 +1,39 @@
+<div style="display:flex;justify-content:center;align-items:center;margin:30px 0;">
+  <button id="random-post" style="
+    width:80px;
+    height:80px;
+    background-color:#d62828;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font:600 14px system-ui, Arial;
+    cursor:pointer;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    box-shadow:0 2px 4px rgba(0,0,0,0.2);
+    transition:background-color 0.2s, transform 0.1s;
+  ">Surprise<br>Me</button>
+</div>
+
+<script>
+document.getElementById('random-post').addEventListener('click', function(){
+  fetch('/feeds/posts/default?alt=json')
+    .then(r=>r.json())
+    .then(d=>{
+      const entries = d.feed.entry || [];
+      if(!entries.length) return;
+      const e = entries[Math.floor(Math.random()*entries.length)];
+      const link = e.link.find(l=>l.rel==='alternate').href;
+      location.href = link;
+    });
+});
+
+// Add hover and click effects
+const btn = document.getElementById('random-post');
+btn.addEventListener('mouseover',()=>btn.style.backgroundColor='#b71c1c');
+btn.addEventListener('mouseout',()=>btn.style.backgroundColor='#d62828');
+btn.addEventListener('mousedown',()=>btn.style.transform='scale(0.95)');
+btn.addEventListener('mouseup',()=>btn.style.transform='scale(1)');
+</script>
