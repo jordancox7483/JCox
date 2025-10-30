@@ -1,0 +1,207 @@
+<!-- Mini Trip Map widget -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<div id="miniTripMapCard" style="position:relative; margin:0 0 12px 0;">
+  <div id="miniTripMap" style="height:200px; border-radius:8px; overflow:hidden; background:#f2f2f2;">
+    <!-- skeleton -->
+    <div id="miniMapSkel" style="
+      position:absolute; inset:0; background:
+      linear-gradient(90deg,#eee 0%,#f8f8f8 50%,#eee 100%);
+      background-size:200% 100%; animation:mapShimmer 1.2s linear infinite;"></div>
+  </div>
+
+  <!-- Click overlay to full map page -->
+  <a href="https://awayfrommydesk-jordan.blogspot.com/p/l.html"
+     aria-label="Open the full trip map"
+     style="position:absolute; inset:0; display:block; text-decoration:none; pointer-events:auto;">
+    <span style="
+      position:absolute; right:8px; bottom:8px;
+      background:rgba(255,255,255,.9); padding:4px 8px; border-radius:6px;
+      font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:#111; box-shadow:0 1px 3px rgba(0,0,0,.2);">
+      Open map
+    </span>
+  </a>
+</div>
+
+<style>
+@keyframes mapShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+
+<script>
+(function miniTripMapWidget(){
+  const CONTAINER_ID = 'miniTripMap';
+  const FEED_URL = `${location.origin}/feeds/posts/summary?alt=json&max-results=300`;
+  const SNAP_KEY = 'AFMD_map_points_v1';
+
+  // Small, fast dictionary only, no geocoding in sidebar
+  const CITY_DICT = {
+    'paris':[48.8566,2.3522],'london':[51.5074,-0.1278],'rome':[41.9028,12.4964],
+    'florence':[43.7696,11.2558],'firenze':[43.7696,11.2558],'munich':[48.1372,11.5756],
+    'münchen':[48.1372,11.5756],'venice':[45.4408,12.3155],'venezia':[45.4408,12.3155],
+    'barcelona':[41.3851,2.1734],'madrid':[40.4168,-3.7038],'montreal':[45.5019,-73.5674],
+    'new york':[40.7128,-74.0060],'nyc':[40.7128,-74.0060],'new orleans':[29.9511,-90.0715],
+    'phoenix':[33.4484,-112.0740],'outer banks':[36.1189,-75.4590],'obx':[36.1189,-75.4590],
+    'helsinki':[60.1699,24.9384],'berlin':[52.5200,13.4050],'warsaw':[52.2297,21.0122],
+    'gdańsk':[54.3520,18.6466],'gdansk':[54.3520,18.6466],'belfast':[54.5973,-5.9301],
+    'derry':[54.9979,-7.3090],'interlaken':[46.6863,7.8632],'lucerne':[47.0502,8.3093],
+    'luzern':[47.0502,8.3093],'stockholm':[59.3293,18.0686],'tahiti':[-17.6509,-149.4260],
+    'moorea':[-17.5388,-149.8295],'nevis':[17.1555,-62.5796],'st kitts':[17.3578,-62.7830],
+    'dominica':[15.4150,-61.3710],'bequia':[12.9884,-61.2575],'samoa':[-13.7590,-172.1040],
+    'dubrovnik':[42.6507,18.0944],'hvar':[43.1720,16.4410],'zurich':[47.3769,8.5417],
+    'prague':[50.0755,14.4378],'vienna':[48.2082,16.3738],'budapest':[47.4979,19.0402],
+    'geneva':[46.2044,6.1432],'copenhagen':[55.6761,12.5683],'reykjavik':[64.1466,-21.9426],
+    'edinburgh':[55.9533,-3.1883],'glasgow':[55.8642,-4.2518],
+    'normandy':[49.1829,-0.3707],'bayeux':[49.2768,-0.7037],'arromanches':[49.3397,-0.6232],
+    'omaha beach':[49.3763,-0.8756],'utah beach':[49.4144,-1.1775],
+    'caen':[49.1829,-0.3707],'mont-saint-michel':[48.6360,-1.5115],
+    'sainte-mère-église':[49.4081,-1.3179],'sainte mere eglise':[49.4081,-1.3179],
+    'jamaica':[18.1096,-77.2975]
+  };
+  const SYN = {
+    'st. kitts':'st kitts','münchen':'munich','venezia':'venice','firenze':'florence',
+    'nyc':'new york','gdansk':'gdańsk','luzern':'lucerne','obx':'outer banks',
+    'mont saint michel':'mont-saint-michel','sainte-mere-eglise':'sainte-mère-église',
+    'ste mere eglise':'sainte-mère-église'
+  };
+  function norm(s){ s=(s||'').trim().toLowerCase(); return SYN[s] || s; }
+
+  // Ensure Leaflet present
+  function waitForLeaflet(){
+    return new Promise(resolve => {
+      if (window.L && L.map) return resolve();
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet/dist/leaflet.js';
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+  }
+
+  // Wait until the widget is visible and has width
+  function whenVisible(el){
+    return new Promise(resolve => {
+      const ready = () => el.offsetWidth > 0 && el.offsetHeight > 0;
+      if (ready()) return resolve();
+      const io = new IntersectionObserver(entries => {
+        if (entries.some(e => e.isIntersecting) && ready()) {
+          io.disconnect();
+          resolve();
+        }
+      }, { threshold: 0.1 });
+      io.observe(el);
+      // Fallback timer
+      setTimeout(() => { if (ready()) { io.disconnect(); resolve(); } }, 2000);
+    });
+  }
+
+  function parseLatLng(entry){
+    if(entry['georss$point'] && entry['georss$point']['$t']){
+      const [lat, lng] = entry['georss$point']['$t'].trim().split(/\s+/).map(Number);
+      if(isFinite(lat) && isFinite(lng)) return [lat, lng];
+    }
+    const where = entry['georss$where'];
+    const pos = where && where['gml$Point'] && where['gml$Point']['gml$pos'] && where['gml$Point']['gml$pos']['$t'];
+    if(pos){
+      const [lat, lng] = pos.trim().split(/\s+/).map(Number);
+      if(isFinite(lat) && isFinite(lng)) return [lat, lng];
+    }
+    return null;
+  }
+
+  function quickCandidates(entry){
+    const title = (entry.title && entry.title.$t) || '';
+    const summary = (entry.summary && entry.summary.$t) || '';
+    const labels = Array.isArray(entry.category) ? entry.category.map(c=>c.term).join(' ') : '';
+    const text = (title + ' ' + summary + ' ' + labels).replace(/<[^>]+>/g,' ');
+    const cands = [];
+    const PREP_RE = /\b(?:in|to|from|at|near)\s+([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+){0,2})\b/g;
+    let m;
+    while((m = PREP_RE.exec(text)) !== null) cands.push(m[1]);
+    labels.split(/[,/|;]+/).forEach(s=>{ if(s && s.trim()) cands.push(s.trim()); });
+    const out = [];
+    cands.forEach(name=>{
+      const key = norm(name);
+      if(CITY_DICT[key]) out.push(CITY_DICT[key]);
+    });
+    return out;
+  }
+
+  async function fetchFeedPoints(limit=200){
+    const pts = [];
+    let url = FEED_URL, pages = 0;
+    while(url && pts.length < limit && pages < 5){
+      const r = await fetch(url);
+      if(!r.ok) break;
+      const data = await r.json();
+      const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
+      entries.forEach(e=>{
+        const ll = parseLatLng(e);
+        if(ll) pts.push(ll);
+        else quickCandidates(e).forEach(p => { if (pts.length < limit) pts.push(p); });
+      });
+      const next = (data.feed && data.feed.link || []).find(l => l.rel === 'next');
+      url = next ? (next.href.includes('alt=json') ? next.href : next.href + (next.href.includes('?')?'&':'?')+'alt=json') : null;
+      pages++;
+    }
+    return pts;
+  }
+
+  function renderMap(points){
+    const el = document.getElementById(CONTAINER_ID);
+    const skel = document.getElementById('miniMapSkel');
+    if (skel) skel.remove();
+
+    if(!points.length){
+      el.innerHTML = '<div style="padding:8px; font:12px system-ui;">No locations yet</div>';
+      return;
+    }
+
+    const map = L.map(CONTAINER_ID, {
+      zoomControl: false, attributionControl: false,
+      dragging: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false
+    }).setView([20,0], 2);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const bounds = [];
+    points.slice(0, 400).forEach(ll=>{
+      bounds.push(ll);
+      L.circleMarker(ll, { radius: 3, opacity: 0.8, fillOpacity: 0.8 }).addTo(map);
+    });
+
+    // Fit once visible and sized
+    setTimeout(() => {
+      if(bounds.length === 1){ map.setView(bounds[0], 7); }
+      else { map.fitBounds(bounds, { padding:[10,10] }); }
+      map.invalidateSize();
+    }, 50);
+
+    // Also fix after any layout reflow
+    window.addEventListener('resize', () => map.invalidateSize(), { passive:true });
+  }
+
+  async function init(){
+    const el = document.getElementById(CONTAINER_ID);
+    await whenVisible(el);
+    await waitForLeaflet();
+
+    // Try cached snapshot first
+    let snap = null;
+    try { snap = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null'); } catch(e){ snap = null; }
+    if(Array.isArray(snap) && snap.length){ renderMap(snap); return; }
+
+    // Fallback to quick feed scan
+    try {
+      const pts = await fetchFeedPoints(200);
+      renderMap(pts);
+    } catch(e){
+      const skel = document.getElementById('miniMapSkel');
+      if (skel) skel.remove();
+      el.innerHTML = '<div style="padding:8px; font:12px system-ui;">Map failed to load</div>';
+      console.error(e);
+    }
+  }
+
+  init();
+})();
+</script>
