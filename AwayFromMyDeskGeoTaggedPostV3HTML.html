@@ -1,0 +1,390 @@
+<!-- Map container + deps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
+<div id="tripMap" style="height:420px"></div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+<script>
+(function(){
+  const MAP_ID = 'tripMap';
+
+  // Use "default" for fuller HTML content
+  const FEED_BASE = `${location.origin}/feeds/posts/default`;
+  const FEED_PARAMS = 'alt=json&max-results=500';
+
+  // Controls
+  let APPROX_ENABLED = true;                 // toggle in HUD
+  const DEFER_GEOCODE_MS = 1000;             // start geocoding after initial paint
+  const USE_GEOCODER = true;
+  const MAX_GEOCODES_PER_LOAD = 30;
+  const GEOCODE_INTERVAL_MS = 1200;
+
+  // Dictionary for fast hits
+  const CITY_DICT = {
+    'paris':[48.8566,2.3522], 'london':[51.5074,-0.1278], 'rome':[41.9028,12.4964],
+    'florence':[43.7696,11.2558], 'firenze':[43.7696,11.2558],
+    'munich':[48.1372,11.5756], 'münchen':[48.1372,11.5756],
+    'venice':[45.4408,12.3155], 'venezia':[45.4408,12.3155],
+    'barcelona':[41.3851,2.1734], 'madrid':[40.4168,-3.7038],
+    'montreal':[45.5019,-73.5674], 'new york':[40.7128,-74.0060], 'nyc':[40.7128,-74.0060],
+    'new orleans':[29.9511,-90.0715], 'phoenix':[33.4484,-112.0740],
+    'outer banks':[36.1189,-75.4590], 'obx':[36.1189,-75.4590],
+    'helsinki':[60.1699,24.9384], 'berlin':[52.5200,13.4050],
+    'warsaw':[52.2297,21.0122], 'gdańsk':[54.3520,18.6466], 'gdansk':[54.3520,18.6466],
+    'belfast':[54.5973,-5.9301], 'derry':[54.9979,-7.3090],
+    'interlaken':[46.6863,7.8632], 'lucerne':[47.0502,8.3093], 'luzern':[47.0502,8.3093],
+    'stockholm':[59.3293,18.0686], 'tahiti':[-17.6509,-149.4260], 'moorea':[-17.5388,-149.8295],
+    'nevis':[17.1555,-62.5796], 'st kitts':[17.3578,-62.7830],
+    'dominica':[15.4150,-61.3710], 'bequia':[12.9884,-61.2575], 'samoa':[-13.7590,-172.1040],
+    'dubrovnik':[42.6507,18.0944], 'hvar':[43.1720,16.4410],
+    'zurich':[47.3769,8.5417], 'prague':[50.0755,14.4378], 'vienna':[48.2082,16.3738],
+    'budapest':[47.4979,19.0402], 'geneva':[46.2044,6.1432],
+    'copenhagen':[55.6761,12.5683], 'reykjavik':[64.1466,-21.9426],
+    'edinburgh':[55.9533,-3.1883], 'glasgow':[55.8642,-4.2518],
+    // Normandy set
+    'normandy':[49.1829,-0.3707], 'bayeux':[49.2768,-0.7037], 'arromanches':[49.3397,-0.6232],
+    'omaha beach':[49.3763,-0.8756], 'utah beach':[49.4144,-1.1775],
+    'caen':[49.1829,-0.3707], 'mont-saint-michel':[48.6360,-1.5115],
+    'sainte-mère-église':[49.4081,-1.3179], 'sainte mere eglise':[49.4081,-1.3179],
+    'jamaica':[18.1096,-77.2975]
+  };
+
+  const CITY_SYNONYMS = {
+    'st. kitts':'st kitts', 'münchen':'munich', 'venezia':'venice', 'firenze':'florence',
+    'nyc':'new york', 'gdansk':'gdańsk', 'luzern':'lucerne', 'obx':'outer banks',
+    'mont saint michel':'mont-saint-michel', 'sainte-mere-eglise':'sainte-mère-église',
+    'ste mere eglise':'sainte-mère-église'
+  };
+
+  const BIAS_BY_NAME = {
+    'normandy':'France', 'belfast':'United Kingdom', 'dublin':'Ireland',
+    'st kitts':'Saint Kitts and Nevis', 'nevis':'Saint Kitts and Nevis', 'geneva':'Switzerland'
+  };
+
+  const COUNTRY_CLUES = {
+    'france':'France','italy':'Italy','germany':'Germany','spain':'Spain','canada':'Canada',
+    'poland':'Poland','croatia':'Croatia','switzerland':'Switzerland','austria':'Austria',
+    'czech':'Czech Republic','denmark':'Denmark','sweden':'Sweden','finland':'Finland',
+    'ireland':'Ireland','scotland':'United Kingdom','wales':'United Kingdom',
+    'england':'United Kingdom','netherlands':'Netherlands','belgium':'Belgium',
+    'greece':'Greece','portugal':'Portugal','mexico':'Mexico','jamaica':'Jamaica'
+  };
+
+  function normKey(name){
+    const k = name.trim().toLowerCase();
+    return CITY_SYNONYMS[k] || k;
+  }
+
+  // Map
+  const map = L.map(MAP_ID, { scrollWheelZoom: true, touchZoom: true }).setView([20, 0], 2);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+  const clusters = L.markerClusterGroup();
+  map.addLayer(clusters);
+
+  // Non-blocking loader and HUD
+  const mapEl = document.getElementById(MAP_ID);
+  mapEl.style.position = 'relative';
+  const loader = document.createElement('div');
+  loader.textContent = 'Loading…';
+  loader.style.cssText = 'position:absolute; left:0; right:0; bottom:0; text-align:center; padding:6px; font-size:12px; background:rgba(255,255,255,.85); pointer-events:none;';
+  mapEl.appendChild(loader);
+
+  const hud = L.control({ position:'topright' });
+  let hudDiv;
+  hud.onAdd = function(){
+    hudDiv = L.DomUtil.create('div','leaflet-control');
+    hudDiv.style.background = 'white';
+    hudDiv.style.padding = '8px 10px';
+    hudDiv.style.borderRadius = '6px';
+    hudDiv.style.boxShadow = '0 1px 4px rgba(0,0,0,.2)';
+    hudDiv.style.fontSize = '12px';
+    hudDiv.innerHTML = `
+      <div><strong>Loading map</strong></div>
+      <div id="hudStats">Posts 0 • Exact 0 • Approx 0 • Queue 0</div>
+      <label style="display:block; margin-top:6px; user-select:none;">
+        <input id="approxToggle" type="checkbox" checked> Approx locations
+      </label>`;
+    L.DomEvent.disableClickPropagation(hudDiv);
+    return hudDiv;
+  };
+  hud.addTo(map);
+  const hudStats = () => hudDiv && hudDiv.querySelector('#hudStats');
+  const approxToggle = () => hudDiv && hudDiv.querySelector('#approxToggle');
+  if (approxToggle()) {
+    approxToggle().addEventListener('change', (e)=> { APPROX_ENABLED = e.target.checked; });
+  }
+
+  // Cache bump to avoid stale nulls
+  const CACHE_KEY = 'geo_cache_v4';
+  const geoCache = (() => { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }})();
+  function saveCache(){ try { localStorage.setItem(CACHE_KEY, JSON.stringify(geoCache)); } catch(e){} }
+
+  // Progress counters
+  let totalPosts = 0, processedPosts = 0, exactCount = 0, approxCount = 0;
+  let firstBoundsApplied = false;
+  const allBounds = [];
+
+  function updateHUD(queueLen){
+    if(!hudStats()) return;
+    hudStats().textContent = `Posts ${processedPosts} • Exact ${exactCount} • Approx ${approxCount} • Queue ${queueLen}`;
+  }
+
+  // Geocode queue
+  const geocodeQueue = [];
+  let geocodesDone = 0;
+  let geocodingStarted = false;
+
+  setInterval(async () => {
+    if(!geocodeQueue.length || !APPROX_ENABLED) return;
+    if(geocodesDone >= MAX_GEOCODES_PER_LOAD) return;
+    const job = geocodeQueue.shift();
+    try {
+      const coords = await geocodeName(job.name, job.biasCountry);
+      geocodesDone++;
+      job.onResult(coords);
+    } catch(e){
+      job.onResult(null);
+    }
+    updateHUD(geocodeQueue.length);
+  }, GEOCODE_INTERVAL_MS);
+
+  function enqueueGeocode(name, biasCountry, onResult){
+    if(!USE_GEOCODER) return;
+    geocodeQueue.push({ name, biasCountry, onResult });
+    updateHUD(geocodeQueue.length);
+  }
+
+  async function geocodeName(name, biasCountry){
+    const key = biasCountry ? `${normKey(name)}|${biasCountry}` : normKey(name);
+    if(geoCache[key] !== undefined) return geoCache[key];
+
+    const q = biasCountry ? `${name}, ${biasCountry}` : name;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`;
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if(!r.ok) { geoCache[key] = null; saveCache(); return null; }
+    const data = await r.json();
+    if(Array.isArray(data) && data.length){
+      const lat = parseFloat(data[0].lat), lon = parseFloat(data[0].lon);
+      if(isFinite(lat) && isFinite(lon)){
+        geoCache[key] = [lat, lon];
+        saveCache();
+        return geoCache[key];
+      }
+    }
+    geoCache[key] = null; saveCache();
+    return null;
+  }
+
+  // Text helpers
+  function cleanHtml(html){ return (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function getBits(entry){
+    const title = entry.title && entry.title.$t ? entry.title.$t : '';
+    const summary = entry.summary && entry.summary.$t ? entry.summary.$t : '';
+    const content = entry.content && entry.content.$t ? entry.content.$t : '';
+    const labels = Array.isArray(entry.category) ? entry.category.map(c => c.term).join(' ') : '';
+    const textTitle = cleanHtml(title);
+    const textBody = cleanHtml(summary + ' ' + content);
+    const textLabels = cleanHtml(labels);
+    return { textTitle, textBody, textLabels, combined: `${textTitle} ${textBody} ${textLabels}`.toLowerCase() };
+  }
+
+  // Hard stops for non-places that previously misfired
+  const STOP_PHRASES = [
+    /\bnew born\b/i, /\bnewborn\b/i, /\bcovid\b/i, /\bno real travel\b/i
+  ];
+  const STOP_TOKENS = new Set([
+    'the','a','an','and','or','of','our','my','we','us','you',
+    'day','days','trip','vacation','adventures','part','chapter','episode','post',
+    'summer','winter','spring','fall','autumn','holiday','break','festival','school',
+    'monday','tuesday','wednesday','thursday','friday','saturday','sunday',
+    'january','february','march','april','may','june','july','august','september','october','november','december',
+    'new' // never accept lone "New" as a place
+  ]);
+
+  // Parse exact geotags from feed entry
+  function parseLatLngFromEntry(entry){
+    if(entry['georss$point'] && entry['georss$point']['$t']){
+      const [lat, lng] = entry['georss$point']['$t'].trim().split(/\s+/).map(Number);
+      if(isFinite(lat) && isFinite(lng)) return [lat, lng];
+    }
+    const where = entry['georss$where'];
+    const pos = where && where['gml$Point'] && where['gml$Point']['gml$pos'] && where['gml$Point']['gml$pos']['$t'];
+    if(pos){
+      const [lat, lng] = pos.trim().split(/\s+/).map(Number);
+      if(isFinite(lat) && isFinite(lng)) return [lat, lng];
+    }
+    return null;
+  }
+
+  function entryLink(entry){
+    const links = entry.link || [];
+    const alt = links.find(l => l.rel === 'alternate');
+    return alt && alt.href ? alt.href : '#';
+  }
+
+  // Candidate extractor with guards against "New Born" type false positives
+  function extractCandidates(entry, biasCountry){
+    const bits = getBits(entry);
+    // If strongly non-travel context and no country clues, skip approx for this post
+    const hasStopPhrase = STOP_PHRASES.some(rx => rx.test(bits.combined));
+    const hasCountryClue = Object.keys(COUNTRY_CLUES).some(k => bits.combined.includes(k));
+    if(hasStopPhrase && !hasCountryClue) return [];
+
+    const title = cleanHtml(entry.title && entry.title.$t || '');
+    const body  = cleanHtml((entry.summary && entry.summary.$t || '') + ' ' + (entry.content && entry.content.$t || ''));
+    const labels= cleanHtml(Array.isArray(entry.category) ? entry.category.map(c=>c.term).join(' ') : '');
+
+    const candidates = new Map();
+
+    function addCandidate(raw, score){
+      let name = (raw || '').trim().replace(/\s+/g,' ');
+      if(!name) return;
+      const lower = name.toLowerCase();
+      const parts = lower.split(' ');
+      if(STOP_TOKENS.has(parts[0])) return;           // drop if starts with a stop token
+      if(/^\d{1,4}$/.test(lower)) return;             // drop pure numbers
+      if(lower.length < 3) return;
+
+      // Guard: two-word items that start with "new" or "saint/st" must be whitelisted or have a country bias
+      const startsWithNew = /^new\s+/.test(lower);
+      const startsWithSaint = /^(saint|st)\.?\s+/.test(lower);
+      const dictKey = normKey(lower);
+      if((startsWithNew || startsWithSaint) && !CITY_DICT[dictKey] && !biasCountry) return;
+
+      // Specific false-positive guard for "new born"
+      if(/\bnew\s+born\b/.test(lower)) return;
+
+      const scoreBoost = CITY_DICT[dictKey] ? 1 : 0;
+      candidates.set(lower, (candidates.get(lower) || 0) + score + scoreBoost);
+    }
+
+    // Labels first
+    labels.split(/[,/|;]+/).forEach(tok => addCandidate(tok, 4));
+
+    // Preposition patterns
+    const PREP_RE = /\b(?:in|to|from|at|around|near|through|into|over)\s+([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+){0,3})\b/g;
+    let m;
+    while((m = PREP_RE.exec(title)) !== null) addCandidate(m[1], 3);
+    while((m = PREP_RE.exec(body)) !== null) addCandidate(m[1], 2);
+
+    // Capitalized chunks in title
+    const CAP_RE = /\b([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+){0,2})\b/g;
+    while((m = CAP_RE.exec(title)) !== null) addCandidate(m[1], 2);
+
+    // "City, Country" in body
+    const CITY_COUNTRY_RE = /\b([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+){0,2})\s*,\s*([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'.-]+)\b/g;
+    while((m = CITY_COUNTRY_RE.exec(body)) !== null) addCandidate(`${m[1]}, ${m[2]}`, 3);
+
+    // Score threshold to reduce noise
+    const MIN_SCORE = 3;
+    return Array.from(candidates.entries())
+      .filter(([,score]) => score >= MIN_SCORE)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([name]) => name);
+  }
+
+  function findCountryBias(text){
+    for(const k of Object.keys(COUNTRY_CLUES)){
+      if(text.includes(k)) return COUNTRY_CLUES[k];
+    }
+    return null;
+  }
+
+  // Marker helpers
+  function addMarker(latlng, entry, isApprox, approxSource){
+    const title = (entry.title && entry.title.$t) || 'Untitled';
+    const href = entryLink(entry);
+    const pub = entry.published && entry.published.$t ? new Date(entry.published.$t) : null;
+    const year = pub ? pub.getFullYear() : '';
+    const approxLine = isApprox ? `<div style="color:#555; font-size:11px;">Approximate: ${approxSource}</div>` : '';
+    const marker = L.marker(latlng).bindPopup(
+      `<strong>${title}</strong><br>${year}<br><a href="${href}">Open post</a>${approxLine}`
+    );
+    clusters.addLayer(marker);
+    allBounds.push(latlng);
+    if(isApprox) approxCount++; else exactCount++;
+    updateHUD(geocodeQueue.length);
+  }
+
+  function fitIfNeeded(){
+    if(!firstBoundsApplied && allBounds.length){
+      firstBoundsApplied = true;
+      map.fitBounds(allBounds, { padding:[20,20] });
+      if(allBounds.length === 1) map.setZoom(7);
+    }
+  }
+
+  // Feed paging: process incrementally so the map is usable immediately
+  async function fetchPage(url){
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('Feed fetch failed: ' + r.status);
+    const data = await r.json();
+    const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
+    let next = null;
+    const links = (data.feed && data.feed.link) ? data.feed.link : [];
+    const n = links.find(l => l.rel === 'next');
+    if(n && n.href){
+      next = n.href.includes('alt=json') ? n.href
+           : n.href + (n.href.includes('?') ? '&' : '?') + 'alt=json';
+    }
+    return { entries, next };
+  }
+
+  (async function run(){
+    let url = `${FEED_BASE}?${FEED_PARAMS}`;
+    let startedGeocodingTimer = false;
+
+    while(url){
+      const { entries, next } = await fetchPage(url);
+      totalPosts += entries.length;
+
+      // Pass 1: exact geotags
+      const remaining = [];
+      entries.forEach(e => {
+        const ll = parseLatLngFromEntry(e);
+        if(ll) addMarker(ll, e, false);
+        else remaining.push(e);
+      });
+
+      // Pass 2: dictionary matches (fast)
+      remaining.forEach(e => {
+        const bits = getBits(e);
+        const bias = findCountryBias(bits.combined);
+        const cands = extractCandidates(e, bias);
+        if(!cands.length) return;
+
+        // Try the strongest one against the dictionary
+        const key = normKey(cands[0]);
+        if(CITY_DICT[key]){
+          addMarker(CITY_DICT[key], e, true, `matched “${cands[0].replace(/\b\w/g,c=>c.toUpperCase())}”`);
+        } else {
+          // Queue for geocoding in Pass 3
+          if(APPROX_ENABLED && USE_GEOCODER){
+            enqueueGeocode(cands[0].replace(/\b\w/g,c=>c.toUpperCase()),
+                           bias || BIAS_BY_NAME[key] || null,
+                           coords => { if(coords) { addMarker(coords, e, true, `geocoded “${cands[0]}”${bias?`, bias ${bias}`:''}`); fitIfNeeded(); }});
+          }
+        }
+      });
+
+      processedPosts += entries.length;
+      updateHUD(geocodeQueue.length);
+      if(!firstBoundsApplied) fitIfNeeded();      // fit after first batch
+      if(!startedGeocodingTimer){
+        startedGeocodingTimer = true;
+        setTimeout(()=>{ geocodingStarted = true; }, DEFER_GEOCODE_MS);
+      }
+      url = next;
+    }
+
+    loader.remove();
+    // If nothing was fitted during streaming, fit now
+    fitIfNeeded();
+  })().catch(err => {
+    loader.textContent = 'Error loading locations';
+    console.error(err);
+  });
+})();
+</script>
