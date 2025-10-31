@@ -8,11 +8,15 @@ I use this repo as storage for scripts, small tools, and snippets I’ve built o
 - PowerShell
 - XSLT
 - JavaScript
+- HTML
 - Python (in progress; experimenting in new scripts)
 
 ## Latest Projects
 - HRIS migration cleanup scripts for Eightfold.AI  
-  Notes: still stabilizing; will share more publicly once I’m comfortable they’re robust. I’m also using this work to learn more Python and GitHub. 
+  Notes: still stabilizing; will share more publicly once I’m comfortable they’re robust. I’m also using this work to learn more Python and GitHub.
+
+- Playing with new features on our travel blog https://awayfrommydesk-jordan.blogspot.com/
+  Notes: Sidebar widgets such as a travel map that links to an interactive map of geotagged posts and my flickr feed.
 
 - Printhead Maintainer – paper source/tray selection  
   Repo: https://github.com/jordancox7483/PrintheadMaintainer  
