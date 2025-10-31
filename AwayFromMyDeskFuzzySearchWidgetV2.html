@@ -1,0 +1,196 @@
+<input id="q" placeholder="Search trips…" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;">
+<div id="results" style="margin-top:10px;font:14px system-ui;"></div>
+
+<script src="https://unpkg.com/lunr/lunr.js"></script>
+<script>
+(async function(){
+  const FEED_BASE = `${location.origin}/feeds/posts/summary?alt=json&max-results=500`;
+
+  // --- Fetch and normalize posts (title, url, text, labels, year) ---
+  async function fetchAll(){
+    let url = FEED_BASE, all = [];
+    while(url){
+      const r = await fetch(url); if(!r.ok) break;
+      const data = await r.json();
+      const entries = (data.feed && data.feed.entry) ? data.feed.entry : [];
+      all.push(...entries);
+      const next = (data.feed.link||[]).find(l=>l.rel==='next');
+      url = next ? (next.href.includes('alt=json')? next.href : next.href + (next.href.includes('?')?'&':'?') + 'alt=json') : null;
+      if(all.length > 3000) break;
+    }
+    return all.map((e,i)=>{
+      const title = (e.title && e.title.$t) || 'Untitled';
+      const url = (e.link||[]).find(l=>l.rel==='alternate')?.href || '#';
+      const date = e.published?.$t?.slice(0,10) || '';
+      const year = date ? parseInt(date.slice(0,4),10) : null;
+      const labelsArr = Array.isArray(e.category) ? e.category.map(c=>c.term) : [];
+      const labels = labelsArr.join(' ');
+      const raw = ((e.summary?.$t || '') + ' ' + (e.content?.$t || '')).replace(/<[^>]+>/g,' ');
+      const text = raw.replace(/\s+/g,' ').trim();
+      // slug from URL for extra matches
+      let slug = '';
+      try{
+        const seg = new URL(url).pathname.split('/').filter(Boolean).pop() || '';
+        slug = decodeURIComponent(seg.replace(/\.html?$/i,'').replace(/[-_]+/g,' '));
+      }catch{}
+      return { id:String(i), title, url, date, year, text, labels, labelsArr, slug };
+    });
+  }
+
+  // --- Accent folding for index and queries ---
+  const foldStr = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const foldToken = function (token){ return token.update(foldStr); };
+
+  const docs = await fetchAll();
+
+  // --- Build Lunr index with field boosts and folding ---
+  const idx = lunr(function () {
+    this.ref('id');
+    this.field('title', { boost: 8 });
+    this.field('labels', { boost: 6 });
+    this.field('slug',   { boost: 5 });
+    this.field('text',   { boost: 1 });
+
+    // Add folding before stemming
+    this.pipeline.before(lunr.stemmer, foldToken);
+    this.searchPipeline.before(lunr.stemmer, foldToken);
+
+    docs.forEach(d => this.add({
+      id: d.id,
+      title: d.title,
+      labels: d.labels,
+      slug: d.slug,
+      text: d.text
+    }));
+  });
+
+  // --- Query parsing: phrases "like this", filters label:Foo year:2018 before:2015 after:2020 ---
+  function parseQuery(q){
+    const tokens = [];
+    const filters = { label: [], year: null, before: null, after: null };
+
+    // Split into quoted phrases or words
+    const re = /"([^"]+)"|(\S+)/g; let m;
+    while((m = re.exec(q)) !== null){
+      const part = (m[1] || m[2] || '').trim();
+      if(!part) continue;
+
+      // filters
+      const lab = part.match(/^label:(.+)$/i);
+      if(lab){ filters.label.push(lab[1].replace(/^"|"$/g,'').trim()); continue; }
+      const yr = part.match(/^year:(\d{4})$/i);
+      if(yr){ filters.year = parseInt(yr[1],10); continue; }
+      const bf = part.match(/^before:(\d{4})$/i);
+      if(bf){ filters.before = parseInt(bf[1],10); continue; }
+      const af = part.match(/^after:(\d{4})$/i);
+      if(af){ filters.after = parseInt(af[1],10); continue; }
+
+      tokens.push(part);
+    }
+    return { tokens, filters };
+  }
+
+  // --- Build a Lunr query with wildcards and fuzziness ---
+  function lunrSearch(raw){
+    const { tokens, filters } = parseQuery(raw);
+    if(!tokens.length && !filters.label.length && !filters.year && !filters.before && !filters.after) return [];
+
+    // Required presence by default
+    const results = idx.query(q => {
+      tokens.forEach(term => {
+        const t = foldStr(term);
+        const L = t.length;
+
+        // Prefix and suffix wildcards for partial words. Cheap guard for very short terms.
+        const wild = (L >= 3)
+          ? lunr.Query.wildcard.LEADING | lunr.Query.wildcard.TRAILING
+          : lunr.Query.wildcard.TRAILING;
+
+        q.term(t, { fields:['title','labels','slug','text'], presence: lunr.Query.presence.REQUIRED, wildcard: wild });
+
+        // Fuzzy fallback for typos, edit distance scales with length
+        if(L >= 4){
+          q.term(t, { fields:['title','labels','slug','text'], presence: lunr.Query.presence.OPTIONAL, editDistance: (L >= 7 ? 2 : 1) });
+        }
+      });
+    });
+
+    // Map to docs and apply post-filters
+    let hits = results.map(h => {
+      const d = docs.find(x => x.id === h.ref);
+      return d ? { doc: d, score: h.score } : null;
+    }).filter(Boolean);
+
+    if(filters.label.length){
+      const want = filters.label.map(s => s.toLowerCase());
+      hits = hits.filter(h => want.every(l => h.doc.labelsArr.some(x => x.toLowerCase() === l)));
+    }
+    if(filters.year)   hits = hits.filter(h => h.doc.year === filters.year);
+    if(filters.before) hits = hits.filter(h => h.doc.year && h.doc.year <  filters.before);
+    if(filters.after)  hits = hits.filter(h => h.doc.year && h.doc.year >  filters.after);
+
+    // Sort by score, then newer first
+    hits.sort((a,b) => b.score - a.score || (b.doc.date || '').localeCompare(a.doc.date || ''));
+
+    return hits.slice(0, 20);
+  }
+
+  // --- Simple highlighter for snippets ---
+  function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function makeSnippet(text, terms, maxLen=180){
+    if(!text) return '';
+    const folded = foldStr(text);
+    let pos = -1;
+    for(const t of terms){
+      const ft = foldStr(t.replace(/^label:|^year:|^before:|^after:/i,''));
+      if(!ft) continue;
+      const i = folded.search(new RegExp(esc(ft), 'i'));
+      if(i >= 0){ pos = i; break; }
+    }
+    if(pos < 0) pos = 0;
+    const start = Math.max(0, pos - Math.floor(maxLen/4));
+    const slice = text.slice(start, start + maxLen);
+    let html = esc(slice);
+    terms.forEach(t => {
+      const ft = foldStr(t.replace(/^label:|^year:|^before:|^after:/i,''));
+      if(!ft) return;
+      const rx = new RegExp(`(${ft.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'ig');
+      html = html.replace(rx, '<mark>$1</mark>');
+    });
+    return (start>0 ? '…' : '') + html + (start + maxLen < text.length ? '…' : '');
+  }
+
+  // --- Render helpers ---
+  const box = (d, score, queryTerms) => `
+    <div style="padding:8px 0;border-bottom:1px solid #eee;">
+      <a href="${d.url}" style="font-weight:600;">${esc(d.title)}</a>
+      <div style="color:#555;font-size:12px;">${d.date || ''}${d.labels ? ' · ' + esc(d.labels) : ''}</div>
+      <div style="color:#333;font-size:13px;">${makeSnippet(d.text, queryTerms)}</div>
+    </div>`;
+
+  // --- UI wire-up with debounce and keyboard enter ---
+  const q = document.getElementById('q');
+  const out = document.getElementById('results');
+
+  // tiny helper line
+  const help = document.createElement('div');
+  help.style.cssText = 'margin-top:6px;font:12px system-ui;color:#666;';
+ // help.textContent = 'Tips: type partials, for example “venic”, use quotes for phrases, label:Italy, year:2018, before:2015, after:2020.';
+  out.parentNode.insertBefore(help, out);
+
+  let tmr=null;
+  function run(){
+    const s = q.value.trim();
+    if(!s){ out.innerHTML=''; return; }
+    const hits = lunrSearch(s);
+    if(!hits.length){ out.innerHTML = '<div style="padding:8px 0;color:#666;">No results</div>'; return; }
+    const terms = s.match(/"([^"]+)"|(\S+)/g) || [];
+    out.innerHTML = hits.map(h => box(h.doc, h.score, terms)).join('');
+  }
+
+  q.addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(run, 180); });
+  q.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ run(); const first = out.querySelector('a'); if(first) first.click(); }
+  });
+})();
+</script>
